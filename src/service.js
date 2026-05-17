@@ -98,7 +98,7 @@ function clearCache(service) {
  * @override
  */
 Service.prototype.get = function get(name) {
-    return this.methods[name]
+    return Object.prototype.hasOwnProperty.call(this.methods, name) && this.methods[name]
         || Namespace.prototype.get.call(this, name);
 };
 
@@ -116,6 +116,9 @@ Service.prototype.resolveAll = function resolveAll() {
  * @override
  */
 Service.prototype.add = function add(object) {
+
+    if (object.name === "__proto__")
+        return this;
 
     /* istanbul ignore if */
     if (this.get(object.name))

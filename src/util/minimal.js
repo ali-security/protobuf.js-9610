@@ -61,6 +61,8 @@ util.emptyArray = Object.freeze ? Object.freeze([]) : /* istanbul ignore next */
  */
 util.emptyObject = Object.freeze ? Object.freeze({}) : /* istanbul ignore next */ {}; // used on prototypes
 
+util.recursionLimit = 100;
+
 /**
  * Tests if the specified value is an integer.
  * @function
@@ -236,7 +238,7 @@ util.longFromHash = function longFromHash(hash, unsigned) {
  */
 function merge(dst, src, ifNotSet) { // used by converters
     for (var keys = Object.keys(src), i = 0; i < keys.length; ++i)
-        if (dst[keys[i]] === undefined || !ifNotSet)
+        if (keys[i] !== "__proto__" && (dst[keys[i]] === undefined || !ifNotSet))
             dst[keys[i]] = src[keys[i]];
     return dst;
 }

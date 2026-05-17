@@ -43,7 +43,7 @@ function genValuePartial_fromObject(gen, field, fieldIndex, prop) {
         } else gen
             ("if(typeof d%s!==\"object\")", prop)
                 ("throw TypeError(%j)", field.fullName + ": object expected")
-            ("m%s=types[%i].fromObject(d%s)", prop, fieldIndex, prop);
+            ("m%s=types[%i].fromObject(d%s,n+1)", prop, fieldIndex, prop);
     } else {
         var isUnsigned = false;
         switch (field.type) {
@@ -105,12 +105,15 @@ function genValuePartial_fromObject(gen, field, fieldIndex, prop) {
 converter.fromObject = function fromObject(mtype) {
     /* eslint-disable no-unexpected-multiline, block-scoped-var, no-redeclare */
     var fields = mtype.fieldsArray;
-    var gen = util.codegen(["d"], mtype.name + "$fromObject")
+    var gen = util.codegen(["d", "n"], mtype.name + "$fromObject")
     ("if(d instanceof this.ctor)")
         ("return d");
     if (!fields.length) return gen
     ("return new this.ctor");
     gen
+    ("if(!n)n=0")
+    ("if(n>util.recursionLimit)")
+        ("throw Error(\"maximum nesting depth exceeded\")")
     ("var m=new this.ctor");
     for (var i = 0; i < fields.length; ++i) {
         var field  = fields[i].resolve(),
@@ -253,11 +256,11 @@ converter.toObject = function toObject(mtype) {
         ("}else")
             ("d%s=o.longs===String?%j:%i", prop, field.typeDefault.toString(), field.typeDefault.toNumber());
             else if (field.bytes) {
-                var arrayDefault = "[" + Array.prototype.slice.call(field.typeDefault).join(",") + "]";
+                var arrayDefault = Array.prototype.slice.call(field.typeDefault);
                 gen
         ("if(o.bytes===String)d%s=%j", prop, String.fromCharCode.apply(String, field.typeDefault))
         ("else{")
-            ("d%s=%s", prop, arrayDefault)
+            ("d%s=%j", prop, arrayDefault)
             ("if(o.bytes!==Array)d%s=util.newBuffer(d%s)", prop, prop)
         ("}");
             } else gen

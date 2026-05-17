@@ -29,6 +29,7 @@ var Enum      = require("./enum"),
  * @param {Object.<string,*>} [options] Declared options
  */
 function Type(name, options) {
+    name = name.replace(/\W/g, "");
     Namespace.call(this, name, options);
 
     /**
@@ -204,7 +205,7 @@ Type.generateConstructor = function generateConstructor(mtype) {
         else if (field.repeated) gen
             ("this%s=[]", util.safeProp(field.name));
     return gen
-    ("if(p)for(var ks=Object.keys(p),i=0;i<ks.length;++i)if(p[ks[i]]!=null)") // omit undefined or null
+    ("if(p)for(var ks=Object.keys(p),i=0;i<ks.length;++i)if(p[ks[i]]!=null&&ks[i]!=="__proto__")") // omit undefined or null
         ("this[ks[i]]=p[ks[i]]");
     /* eslint-enable no-unexpected-multiline */
 };
@@ -312,9 +313,9 @@ Type.prototype.resolveAll = function resolveAll() {
  * @override
  */
 Type.prototype.get = function get(name) {
-    return this.fields[name]
-        || this.oneofs && this.oneofs[name]
-        || this.nested && this.nested[name]
+    return Object.prototype.hasOwnProperty.call(this.fields, name) && this.fields[name]
+        || this.oneofs && Object.prototype.hasOwnProperty.call(this.oneofs, name) && this.oneofs[name]
+        || this.nested && Object.prototype.hasOwnProperty.call(this.nested, name) && this.nested[name]
         || null;
 };
 

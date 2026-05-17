@@ -16,9 +16,12 @@ function missing(field) {
  */
 function decoder(mtype) {
     /* eslint-disable no-unexpected-multiline */
-    var gen = util.codegen(["r", "l"], mtype.name + "$decode")
+    var gen = util.codegen(["r", "l", "n"], mtype.name + "$decode")
     ("if(!(r instanceof Reader))")
         ("r=Reader.create(r)")
+    ("if(!n)n=0")
+    ("if(n>Reader.recursionLimit)")
+        ("throw Error(\"maximum nesting depth exceeded\")")
     ("var c=l===undefined?r.len:r.pos+l,m=new this.ctor" + (mtype.fieldsArray.filter(function(field) { return field.map; }).length ? ",k,value" : ""))
     ("while(r.pos<c){")
         ("var t=r.uint32()");
@@ -59,14 +62,14 @@ function decoder(mtype) {
                         ("case 2:");
 
             if (types.basic[type] === undefined) gen
-                            ("value=types[%i].decode(r,r.uint32())", i); // can't be groups
+                            ("value=types[%i].decode(r,r.uint32(),n+1)", i); // can't be groups
             else gen
                             ("value=r.%s()", type);
 
             gen
                             ("break")
                         ("default:")
-                            ("r.skipType(tag2&7)")
+                            ("r.skipType(tag2&7,n)")
                             ("break")
                     ("}")
                 ("}");
@@ -92,15 +95,15 @@ function decoder(mtype) {
 
             // Non-packed
             if (types.basic[type] === undefined) gen(field.resolvedType.group
-                    ? "%s.push(types[%i].decode(r))"
-                    : "%s.push(types[%i].decode(r,r.uint32()))", ref, i);
+                    ? "%s.push(types[%i].decode(r,undefined,n+1))"
+                    : "%s.push(types[%i].decode(r,r.uint32(),n+1))", ref, i);
             else gen
                     ("%s.push(r.%s())", ref, type);
 
         // Non-repeated
         } else if (types.basic[type] === undefined) gen(field.resolvedType.group
-                ? "%s=types[%i].decode(r)"
-                : "%s=types[%i].decode(r,r.uint32())", ref, i);
+                ? "%s=types[%i].decode(r,undefined,n+1)"
+                : "%s=types[%i].decode(r,r.uint32(),n+1)", ref, i);
         else gen
                 ("%s=r.%s()", ref, type);
         gen
@@ -109,7 +112,7 @@ function decoder(mtype) {
         // Unknown fields
     } gen
             ("default:")
-                ("r.skipType(t&7)")
+                ("r.skipType(t&7,n)")
                 ("break")
 
         ("}")

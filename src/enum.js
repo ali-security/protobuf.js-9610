@@ -122,6 +122,9 @@ Enum.prototype.toJSON = function toJSON(toJSONOptions) {
 Enum.prototype.add = function add(name, id, comment, options) {
     // utilized by the parser but not by .fromJSON
 
+    if (name === "__proto__")
+        return this;
+
     if (!util.isString(name))
         throw TypeError("name must be a string");
 
